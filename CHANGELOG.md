@@ -1,3 +1,57 @@
+﻿# 0.3.10 - 2020-06-24
+
+* Downgrade discord.js package to fix crashes #415 @DanrwAU
+* Add user-agent strings for webhook plugins #416 @DanrwAU
+* Cleanup redundant code in db.js #417 @DanrwAU
+* Add Multi-User support, moves all authentication to be DB backed. #411 @DanrwAU
+* Add Unit testing #420 @DanrwAU @marshyonline
+
+# 0.3.9 - 2020-05-13
+ 
+ * Add fix allowing for greater than 100KB CSV files #397 @DanrwAU
+ * Remove errant packages that shouldn't have made the release #398 @DanrwAU
+ * Fix 500 errors filling the logs with errors #398 @DanrwAU
+ * Convert PMX to PM2/IO #398 @DanrwAU
+ * Migrated plugins from request and http to axios client #401 @SloCompTech
+ * Add fix for Multi-Delete on MySQL DB #403 @DanrwAU
+ * Fix Delete button on AliasDetail screen #404 @DanrwAU
+ * Fix Shell Plugin callbacks #407 @all3kcis
+ 
+ # 0.3.8 - 2020-05-04
+
+* Add CSV Export for Aliases #383 #388 @DanrwAU
+* Add Theme support #385 @DanrwAU
+* Docker documentation update #387 @SloCompTech
+* Implement FontAwesome 5 #389 @Maaaaattee @DanrwAU 
+* Readability update #390 @RyanUnderwood
+* Add title support #391 @RyanUnderwood
+* Add CSV Import for Aliases #392 @DanrwAU
+* Add fix for Sitename being blank #395 @DanrwAU @davidmckenzie 
+
+# 0.3.7 - 2020-04-21
+
+* Add Oracle support because why the heck not #345 @davidmckenzie
+* Fix new FLEX multimon format #357 @davidmckenzie
+* ~~Changed FontAwesome to v5.13.0 + Switched to cdnjs.cloudflare.com to serve #365 @MaxwellDPS~~
+* Docker Improvements and Auto-build with dockerhub #367 @SloCompTech
+* ~~Add FontAwesome Shims to make 0.3.7 non-breaking #369 @DanrwAU~~
+* Fix Agency Searching crashing applicaiton #370 @DanrwAU
+* Docker: Fix for saving config in docker if changed UID,GID #376 @SloCompTech
+* Docker: Multistage build #377 @SloCompTech
+* Add option to relocate searchbar #378 @marshyonline, @DanrWAU
+
+Note: FontAwesome V5 removed due to compatibility issues
+
+# 0.3.6 - 2020-03-19
+
+* Add Generic Webhook plugin #325 @stubbers
+* Cleanup legacy DB code, add more logging to Knex #335 @DanrwAU
+* GA De-Dupe - Resolved Dupe GA Hits. @marshyonline
+* Add front page popout. @marshyonline
+* Fix mixed content errors on admin panel @davidmckenzie
+* Fix Knex serialisation #343 @davidmckenzie
+* Enable Help Button @marshyonline
+
 # 0.3.5 - 2019-09-06
 
 * Add Knex logging to Winston #311 @DanrwAU

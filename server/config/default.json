@@ -1,7 +1,13 @@
 {
   "global": {
     "loglevel": "debug",
-    "sessionSecret": "1DVETLX8VE007RYQN9TN9Z00"
+    "sessionSecret": "1DVETLX8VE007RYQN9TN9Z00",
+    "frontPopupEnable": false,
+    "frontPopupTitle": "",
+    "frontPopupContent": "",
+    "searchLocation": "bottom",
+    "theme": "default",
+    "monitorName": "PagerMon"
   },
   "database": {
     "file": "./messages.db",
@@ -34,7 +40,7 @@
     "apiSecurity": false
   },
   "auth": {
-    "type": "local",
+    "registration": false,
     "user": "admin",
     "encPass": "$2a$08$De/aXnQkZIEbQ9p8J22tHuzLltqIbsAxE2CGgRMPLaaIwwHmVrpsu",
     "keys": [

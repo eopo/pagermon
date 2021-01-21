@@ -1,14 +1,14 @@
-var version = "0.3.5-beta";
-var release = 20190106;
+var version = "0.3.10-beta";
 
 var debug = require('debug')('pagermon:server');
-var pmx = require('pmx').init({
+var io = require('@pm2/io').init({
     http          : true, // HTTP routes logging (default: true)
     ignore_routes : [/socket\.io/, /notFound/], // Ignore http routes with this pattern (Default: [])
     errors        : true, // Exceptions logging (default: true)
     custom_probes : true, // Auto expose JS Loop Latency and HTTP req/s as custom metrics
     network       : true, // Network monitoring at the application level
-    ports         : true  // Shows which ports your app is listening on (default: false)
+    ports         : true,  // Shows which ports your app is listening on (default: false)
+    transactions  : true
 });
 var http = require('http');
 var compression = require('compression');
@@ -22,9 +22,8 @@ var fs = require('fs');
 var session = require('express-session');
 var request = require('request');
 var SQLiteStore = require('connect-sqlite3')(session);
-var passport = require('passport');
 var flash    = require('connect-flash');
-require('./config/passport')(passport);
+
 
 process.on('SIGINT', function() {
     console.log( "\nGracefully shutting down from SIGINT (Ctrl-C)" );
@@ -33,14 +32,23 @@ process.on('SIGINT', function() {
 
 // create config file if it does not exist, and set defaults
 var conf_defaults = require('./config/default.json');
-var conf_file = './config/config.json';
-if( ! fs.existsSync(conf_file) ) {
-    fs.writeFileSync( conf_file, JSON.stringify(conf_defaults,null, 2) );
+var confFile = './config/config.json';
+if( ! fs.existsSync(confFile) ) {
+    fs.writeFileSync( confFile, JSON.stringify(conf_defaults,null, 2) );
 }
 // load the config file
 var nconf = require('nconf');
-    nconf.file({file: conf_file});
+    nconf.file({file: confFile});
     nconf.load();
+
+//Load current theme
+var theme = nconf.get('global:theme')
+// set the theme if none found, for backwards compatibility
+if (!theme) {
+  nconf.set('global:theme', "default");
+  nconf.save();
+  var theme = nconf.get('global:theme')
+}
 
 //Enable Azure Monitoring if enabled
 var azureEnable = nconf.get('monitoring:azureEnable')
@@ -60,19 +68,22 @@ if (azureEnable) {
 }
 
 var dbinit = require('./db');
-    dbinit.init(release);
+    dbinit.init();
 var db = require('./knex/knex.js');
+
+var passport = require('./auth/local');
 
 // routes
 var index = require('./routes/index');
 var admin = require('./routes/admin');
 var api = require('./routes/api');
+var auth = require('./routes/auth');
 
 var port = normalizePort(process.env.PORT || '3000');
 var app = express();
     app.set('port', port);
     // view engine setup
-    app.set('views', path.join(__dirname, 'views'));
+    app.set('views', path.join(__dirname,'themes',theme, 'views'));
     app.set('view engine', 'ejs');
     app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
@@ -108,7 +119,7 @@ adminio.on('connection', function (socket) {
 //    });
 });
 
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+app.use(favicon(path.join(__dirname,'themes',theme, 'public', 'favicon.ico')));
 
 // set socket.io to be shared across all modules
 app.use(function(req,res,next){
@@ -121,8 +132,13 @@ var secret = nconf.get('global:sessionSecret');
 // compress all responses
 app.use(compression());
 app.use(require("morgan")("combined", { "stream": logger.http.stream }));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({
+  limit: '1mb',
+}));       // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({     
+  extended: true,
+  limit: '1mb',
+})); // to support URL-encoded bodies
 app.use(cookieParser());
 
 var sessSet = {
@@ -140,7 +156,7 @@ app.use(session(sessSet));
 app.use(passport.initialize());
 app.use(passport.session()); // persistent login sessions
 app.use(flash());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname,'themes',theme, 'public')));
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 app.use(function(req, res, next) {
   res.locals.version = version;
@@ -153,6 +169,7 @@ app.use('/', index);
 app.use('/admin', admin);
 app.use('/post', api);
 app.use('/api', api);
+app.use('/auth', auth);
 
 
 // catch 404 and forward to error handler
@@ -164,13 +181,19 @@ app.use(function(req, res, next) {
 
 // error handler
 app.use(function(err, req, res, next) {
+  var title = nconf.get('global:monitorName') || 'PagerMon';
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
+  //these 3 have to be here to stop the error handler shitting up the logs with undefined references when it receives a 500 error ... nfi why
+  res.locals.login = req.isAuthenticated();
+  res.locals.gaEnable = nconf.get('monitoring:gaEnable');
+  res.locals.monitorName = nconf.get("global:monitorName");
+  res.locals.register = nconf.get('auth:registration')
 
   // render the error page
   res.status(err.status || 500);
-  res.render('global/error', { title: 'PagerMon' });
+  res.render(path.join(__dirname,'themes',theme, 'views', 'global', 'error'), { title: title });
 });
 
 // Add cronjob to automatically refresh aliases
@@ -203,6 +226,14 @@ if (dbtype == 'mysql') {
       logger.main.debug('CRON: Alias Refresh not Required, Skipping.')
     }
   }, null, true);
+}
+
+//Disable all logging for tests
+if(process.env.NODE_ENV === 'test') { 
+  logger.main.silent = true
+  logger.auth.silent = true
+  logger.db.silent = true
+  logger.http.silent = true
 }
 
 module.exports = app;

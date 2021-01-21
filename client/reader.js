@@ -15,15 +15,15 @@
 // create config file if it does not exist, and set defaults
 var fs = require('fs');
 var conf_defaults = require('./config/default.json');
-var conf_file = './config/config.json';
-if( ! fs.existsSync(conf_file) ) {
-    fs.writeFileSync( conf_file, JSON.stringify(conf_defaults,null, 2) );
-    console.log('created config file - set your api key in '+conf_file);
+var confFile = './config/config.json';
+if( ! fs.existsSync(confFile) ) {
+    fs.writeFileSync( confFile, JSON.stringify(conf_defaults,null, 2) );
+    console.log('created config file - set your api key in '+confFile);
     return;
 }
 // load the config file
 var nconf = require('nconf');
-    nconf.file({file: conf_file});
+    nconf.file({file: confFile});
     nconf.load();
 
 var hostname = nconf.get('hostname');
@@ -100,39 +100,37 @@ rl.on('line', (line) => {
       message = false;
       trimMessage = '';
     }
-  } else if (line.indexOf('FLEX: ') > -1) {
-    address = line.match(/FLEX:.*?\[(\d*?)\] /)[1].trim();
+  } else if (line.match(/FLEX[:|]/)) {
+    address = line.match(/FLEX[:|] ?.*?[\[|](\d*?)[\]| ]/)[1].trim();
     if (useTimestamp) {
-      if (line.match(/FLEX: \d{2} \w+ \d{4} \d{2}:\d{2}:\d{2}/)) {
+      if (line.match(/FLEX[:|] ?\d{2} \w+ \d{4} \d{2}:\d{2}:\d{2}/)) {
         timeString = line.match(/\d+ \w+ \d+ \d{2}:\d{2}:\d{2}/)[0];
         if (moment(timeString, 'DD MMMM YYYY HH:mm:ss').isValid()) {
           datetime = moment(timeString, 'DD MMMM YYYY HH:mm:ss').unix();
         }
-      } else if (line.match(/FLEX: \d+-\d+-\d+ \d{2}:\d{2}:\d{2}/)) {
+      } else if (line.match(/FLEX[:|] ?\d+-\d+-\d+ \d{2}:\d{2}:\d{2}/)) {
         timeString = line.match(/\d+-\d+-\d+ \d{2}:\d{2}:\d{2}/)[0];
         if (moment(timeString).isValid()) {
           datetime = moment(timeString).unix();
         }
       }
     }
-    if (line.match( /( ALN | GPN | NUM)/ )) {
-      if (line.match( / [0-9]{4}\/[0-9]\/F\/. / )) {
+    if (line.match( /([ |]ALN[ |]|[ |]GPN[ |]|[ |]NUM[ |])/ )) {
+      message = line.match(/FLEX[:|].*[|\[][0-9 ]*[|\]] ?...[ |](.+)/)[1].trim();
+      if (line.match( /[ |][0-9]{4}\/[0-9]\/F\/.[ |]/ )) {
         // message is fragmented, hold onto it for next line
-        frag[address] = line.match(/FLEX:.*?\[\d*\] ... (.*?)$/)[1].trim();
+        frag[address] = message;
         message = false;
         trimMessage = '';
-      } else if (line.match( / [0-9]{4}\/[0-9]\/C\/. / )) {
+      } else if (line.match( /[ |][0-9]{4}\/[0-9]\/C\/.[ |]/ )) {
         // message is a completion of the last fragmented message
-        message = line.match(/FLEX:.*?\[\d*\] ... (.*?)$/)[1].trim();
         trimMessage = frag[address]+message;
         delete frag[address];
-      } else if (line.match( / [0-9]{4}\/[0-9]\/K\/. / )) {
+      } else if (line.match( /[ |][0-9]{4}\/[0-9]\/K\/.[ |]/ )) {
         // message is a full message
-        message = line.match(/FLEX:.*?\[\d*\] ... (.*?)$/)[1].trim();
         trimMessage = message;
       } else {
         // message doesn't have the KFC flags, treat as full message
-        message = line.match(/FLEX:.*?\[\d*\] ... (.*?)$/)[1].trim();
         trimMessage = message;
       }
     }

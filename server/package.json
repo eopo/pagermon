@@ -56,7 +56,7 @@
     "slack": "latest",
     "socket.io": "^2.0.2",
     "sqlite3": "~4.0.2",
-    "systemjs": "^0.20.13",
+    "systemjs": "^6.12.2",
     "telegram-bot-api": "^1.2.2",
     "twit": "latest",
     "underscore": "^1.8.3",

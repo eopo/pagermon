@@ -19,7 +19,9 @@ function configureLogger(label) {
                         format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
                         format.prettyPrint(),
                         format.splat(),
-                        format.printf(info => `${info.label}  ${info.timestamp}  ${info.level}: ${info.message}`)
+                        format.printf(
+                                info => `${info.label.padEnd(10)}  ${info.timestamp}  ${info.level}: ${info.message}`
+                        )
                 ),
                 transports: [
                         new winston.transports.File({
@@ -35,13 +37,13 @@ function configureLogger(label) {
                         }),
                 ],
         };
-        return { label, logger };
+        return [label, logger];
 }
 
-winston.loggers.add(configureLogger('pagermon'));
-winston.loggers.add(configureLogger('http'));
-winston.loggers.add(configureLogger('db'));
-winston.loggers.add(configureLogger('auth'));
+winston.loggers.add(...configureLogger('pagermon'));
+winston.loggers.add(...configureLogger('http'));
+winston.loggers.add(...configureLogger('db'));
+winston.loggers.add(...configureLogger('auth'));
 
 module.exports = {
         main: winston.loggers.get('pagermon'),

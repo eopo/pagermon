@@ -1,6 +1,8 @@
 const version = '0.4.0-beta';
 
 const debug = require('debug')('pagermon:server');
+
+// TODO: Do we really need that? I think majority of users doesn't actually use pm2 dashboard @eopo
 const pm2io = require('@pm2/io').init({
         http: true, // HTTP routes logging (default: true)
         ignore_routes: [/socket\.io/, /notFound/], // Ignore http routes with this pattern (Default: [])

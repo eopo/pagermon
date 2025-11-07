@@ -1,0 +1,5 @@
+services:
+  worker:
+    build: ./worker
+  agent:
+    build: ./agent

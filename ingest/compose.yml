@@ -1,0 +1,27 @@
+name: pagermon-ingest
+services:
+  worker:
+    image: ghcr.io/pagermon/pagermon-ingest-worker:latest
+    restart: unless-stopped
+    env_file: stack.env
+    depends_on:
+      - redis
+  agent:
+    image: ghcr.io/pagermon/pagermon-ingest-agent:latest
+    restart: unless-stopped
+    env_file: stack.env
+    volumes:
+      # This maps all usb devices from the host to the container
+      # You might want to limit it to the specific device you are using
+      # e.g., /dev/ttyUSB0:/dev/ttyUSB0
+      # This setting is also OS dependent - adjust accordingly for non-linux hosts
+      - /dev/usb/:/dev/usb/
+    depends_on:
+      - redis
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+volumes:
+  redis-data:

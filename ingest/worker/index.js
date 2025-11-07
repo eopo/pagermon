@@ -16,7 +16,7 @@ if (!WORKER__API_KEY) {
 
 console.log('Starting SDR worker, connecting to', REDIS_URL);
 
-const connection = new IORedis(REDIS_URL);
+const connection = new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
 
 const worker = new Worker('sdr-messages', async job => {
     const message = job.data;

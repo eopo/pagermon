@@ -1,4 +1,4 @@
-const version = require('../../package.json').version;
+const version = require('./package.json').version;
 
 const {Worker} = require('bullmq');
 const IORedis = require('ioredis');

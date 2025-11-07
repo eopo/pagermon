@@ -79,10 +79,12 @@ function spawnMultimon() {
     });
 
     if (AGENT__CHARSET) mmArgs.push('-c', AGENT__CHARSET);
-    if (AGENT__FORMAT) mmArgs.push('-F', AGENT__FORMAT);
+    if (AGENT__FORMAT) mmArgs.push('-f', AGENT__FORMAT);
 
     mmArgs.push('--timestamp');
-    mmArgs.push('--label', 'pagermon');
+    mmArgs.push('--iso8601');
+    mmArgs.push('--json');
+    mmArgs.push('-')
 
     console.log('Spawning multimon-ng', mmArgs.join(' '));
     mmProc = spawn('multimon-ng', mmArgs, { stdio: ['pipe', 'pipe', 'inherit'] });

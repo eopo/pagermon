@@ -135,9 +135,7 @@ function createPipe() {
     }
 }
 
-function shutdown() {
-    const raw = arguments.length > 0 ? arguments[0] : 0;
-    const exitCode = (typeof raw === 'number') ? raw : ((typeof raw === 'string') ? 1 : 0);
+function shutdown(code = 0) {
     console.log('Shutting down');
     Promise.resolve()
         .then(() => queue.close().catch((err) => { console.error('Error closing queue', err); }))
@@ -152,7 +150,7 @@ function shutdown() {
         })
         .then(() => {
             console.log('Shutdown complete');
-            process.exit(exitCode);
+            process.exit(code);
         })
         .catch((err) => {
             console.error('Error during shutdown', err);
@@ -191,6 +189,10 @@ function handleLine(line) {
 
         } catch (err) {
             console.log(line);
+            if (line.indexOf('status:') !== -1) {
+                const status = /status: (\d)/.exec(line);
+                shutdown(status ? parseInt(status[1], 10) : 1);
+            }
         }
 
 }
@@ -223,11 +225,12 @@ function main() {
 
     rl.on('close', () => {
         console.error('multimon-ng stdout closed');
-        shutdown();
+        shutdown(1);
     });
 
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+    process.on('SIGQUIT', shutdown);
 }
 
 

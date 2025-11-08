@@ -31,6 +31,7 @@ const queue = new Queue('sdr-messages', { connection: redis , defaultJobOptions:
 queue.on('completed', (job) => {
     queue.getFailed().then((failed) => {
         for (const f of failed) {
+
             Job.fromId(queue, f.id, f.data)?.retry();
         }
     }).catch((err) => {
@@ -194,7 +195,7 @@ const handlePocsag = (obj) => ({
         address: obj.address + obj.function, // I absolute hate it, but I need it for now.
         message: obj.alpha || obj.numeric || '',
         time: obj.timestamp,
-        timestamp: new Date(obj.timestamp).getTime(),
+        timestamp: Math.floor(new Date(obj.timestamp).getTime()/1000),
         function: obj.function,
     })
 
@@ -202,7 +203,7 @@ const handleFlex = (obj) => ({
         address: obj.capcode,
         message: obj.message || '',
         time: obj.timestamp,
-        timestamp: new Date(obj.timestamp).getTime(),
+        timestamp: Math.floor(new Date(obj.timestamp).getTime()/1000),
 })
 
 function main() {

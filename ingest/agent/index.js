@@ -17,6 +17,8 @@ const AGENT__PROTOCOLS = process.env.AGENT__PROTOCOLS || null;
 const AGENT__CHARSET = process.env.AGENT__CHARSET || null;
 const AGENT__FORMAT = process.env.AGENT__FORMAT || 'alpha';
 
+const AGENT__LABEL = process.env.AGENT__LABEL || 'sdr-agent';
+
 console.log('Starting SDR agent');
 
 const redis = new IORedis(REDIS_URL, { maxRetriesPerRequest: 5 });
@@ -175,6 +177,8 @@ function handleLine(line) {
                 console.warn('Unknown protocol:', obj.demod_name);
                 return null;
             }
+
+            msg.source = AGENT__LABEL;
 
             queue.add('message', msg, { removeOnComplete: true, removeOnFail: false })
             .then((job) => {

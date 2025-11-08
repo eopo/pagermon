@@ -62,8 +62,13 @@ function spawnRTL() {
     });
     rtlProc.on('exit', (code, signal) => {
         console.error(`rtl_fm exited with code=${code} signal=${signal}`);
-        // Controlled crash on device loss
-        shutdown(code || 1);
+        // Controlled crash on device loss. If the child exited due to a signal,
+        // 'code' will be null and 'signal' will be a string (e.g. 'SIGTERM').
+        // Normalize to a numeric exit code: use the numeric code if present,
+        // otherwise use 1 to indicate failure.
+        const exitCode = (typeof code === 'number') ? code : (signal ? 1 : 0);
+        // Call shutdown with a numeric code (shutdown will call process.exit)
+        shutdown(exitCode);
     });
 
     // return the spawned process so callers can keep a reference
@@ -96,20 +101,17 @@ function spawnMultimon() {
     mmProc = spawn('multimon-ng', mmArgs, { stdio: ['pipe', 'pipe', 'inherit'] });
     mmProc.on('error', (err) => {
         console.error('multimon-ng error', err);
-        // If multimon-ng fails to start, try to shutdown and exit with non-zero
         shutdown(1);
     });
     mmProc.on('exit', (code, signal) => {
         console.error(`multimon-ng exited with code=${code} signal=${signal}`);
-        shutdown();
-        // Controlled crash on device loss
-        process.exit(code);
+        const exitCode = (typeof code === 'number') ? code : (signal ? 1 : 0);
+        shutdown(exitCode);
     });
     return mmProc;
 }
 
 function createPipe() {
-    // pipe rtl_fm stdout into multimon-ng stdin
     if (rtlProc.stdout && mmProc.stdin) {
         rtlProc.stdout.pipe(mmProc.stdin);
     }

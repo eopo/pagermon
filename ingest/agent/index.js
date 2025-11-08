@@ -177,14 +177,16 @@ function handleLine(line) {
 const handlePocsag = (obj) => ({
         address: obj.address,
         message: obj.alpha || obj.numeric || '',
-        timestamp: obj.timestamp,
+        time: obj.timestamp,
+        timestamp: new Date(obj.timestamp).getTime(),
         function: obj.function,
     })
 
 const handleFlex = (obj) => ({
         address: obj.capcode,
         message: obj.message || '',
-        timestamp: obj.timestamp,
+        time: obj.timestamp,
+        timestamp: new Date(obj.timestamp).getTime(),
 })
 
 function main() {

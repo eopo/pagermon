@@ -118,7 +118,8 @@ function createPipe() {
 }
 
 function shutdown() {
-    const exitCode = arguments.length > 0 ? arguments[0] : 0;
+    const raw = arguments.length > 0 ? arguments[0] : 0;
+    const exitCode = (typeof raw === 'number') ? raw : ((typeof raw === 'string') ? 1 : 0);
     console.log('Shutting down');
     Promise.resolve()
         .then(() => queue.close().catch((err) => { console.error('Error closing queue', err); }))

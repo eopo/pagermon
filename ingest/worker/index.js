@@ -8,6 +8,7 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://redis:6379';
 
 const WORKER__API_URL = process.env.WORKER__API_URL || 'http://pagermon:3000';
 const WORKER__API_KEY = process.env.WORKER__API_KEY;
+const WORKER__SOURCE = process.env.WORKER__SOURCE || 'pagermon-ingest-worker';
 
 if (!WORKER__API_KEY) {
     console.error('WORKER__API_KEY not specified in environment');
@@ -20,6 +21,7 @@ const connection = new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
 
 const worker = new Worker('sdr-messages', async job => {
     const message = job.data;
+    message.source = WORKER__SOURCE;
 
     console.log('Processing message:', message);
 

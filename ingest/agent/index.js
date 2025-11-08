@@ -175,7 +175,7 @@ function handleLine(line) {
 }
 
 const handlePocsag = (obj) => ({
-        address: obj.address,
+        address: obj.address + obj.function, // I absolute hate it, but I need it for now.
         message: obj.alpha || obj.numeric || '',
         time: obj.timestamp,
         timestamp: new Date(obj.timestamp).getTime(),

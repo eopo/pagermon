@@ -37,7 +37,7 @@ const worker = new Worker('sdr-messages', async job => {
         if (!response.ok) {
             throw new Error(`Failed to send message to PagerMon: ${response.statusText}`);
         }
-        const responseBody = await response.json();
+        const responseBody = await response.text();
 
         console.log('Transmission successful for message ID:', responseBody);
     } catch (error) {

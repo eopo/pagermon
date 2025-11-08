@@ -3,7 +3,7 @@
 const { spawn } = require('child_process');
 const readline = require('readline');
 
-const { Queue } = require('bullmq');
+const { Queue, Job } = require('bullmq');
 const IORedis = require('ioredis');
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://redis:6379';
@@ -20,7 +20,22 @@ const AGENT__FORMAT = process.env.AGENT__FORMAT || 'alpha';
 console.log('Starting SDR agent');
 
 const redis = new IORedis(REDIS_URL, { maxRetriesPerRequest: 5 });
-const queue = new Queue('sdr-messages', { connection: redis });
+const queue = new Queue('sdr-messages', { connection: redis , defaultJobOptions: {
+    attempts: 10,
+    backoff: {
+        type: 'exponential',
+        delay: 1000,
+    },
+}});
+
+queue.on('completed', (job) => {
+    queue.getFailed().then((failed) => {
+        for (const f of failed) {
+            Job.fromId(queue, f.id, f.data)?.retry();
+        }
+    }).catch((err) => {
+    });
+});
 
 let mmProc;
 let rtlProc;

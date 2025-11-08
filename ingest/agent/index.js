@@ -16,32 +16,35 @@ const AGENT__PPM = process.env.AGENT__PPM || null;
 const AGENT__PROTOCOLS = process.env.AGENT__PROTOCOLS || null;
 const AGENT__CHARSET = process.env.AGENT__CHARSET || null;
 const AGENT__FORMAT = process.env.AGENT__FORMAT || 'alpha';
+const AGENT__DEVICE = process.env.AGENT__DEVICE || null;
 
 const AGENT__LABEL = process.env.AGENT__LABEL || 'sdr-agent';
 
-console.log('Starting SDR agent');
-
-const redis = new IORedis(REDIS_URL, { maxRetriesPerRequest: 5 });
-const queue = new Queue('sdr-messages', { connection: redis , defaultJobOptions: {
-    attempts: 10,
-    backoff: {
-        type: 'exponential',
-        delay: 1000,
-    },
-}});
-
-queue.on('completed', (job) => {
-    queue.getFailed().then((failed) => {
-        for (const f of failed) {
-
-            Job.fromId(queue, f.id, f.data)?.retry();
-        }
-    }).catch((err) => {
-    });
-});
-
 let mmProc;
 let rtlProc;
+let queue;
+let redis;
+
+function createQueue() {
+    redis = new IORedis(REDIS_URL, { maxRetriesPerRequest: 5 });
+    queue = new Queue('sdr-messages', { connection: redis , defaultJobOptions: {
+        attempts: 10,
+        backoff: {
+            type: 'exponential',
+            delay: 1000,
+        },
+    }});
+    
+    queue.on('completed', (job) => {
+        queue.getFailed().then((failed) => {
+            for (const f of failed) {
+    
+                Job.fromId(queue, f.id, f.data)?.retry();
+            }
+        }).catch((err) => {
+        });
+    });
+}
 
 function spawnRTL() {
     const rtlArgs = ['-s', '22050'];
@@ -64,9 +67,9 @@ function spawnRTL() {
 
     if (AGENT__GAIN) rtlArgs.push('-g', String(AGENT__GAIN));
     if (AGENT__PPM) rtlArgs.push('-p', String(AGENT__PPM));
-    if (AGENT__SQUELCH) {
-        rtlArgs.push('-l', String(AGENT__SQUELCH));
-    }
+    if (AGENT__SQUELCH) rtlArgs.push('-l', String(AGENT__SQUELCH));
+    if (AGENT__DEVICE) rtlArgs.push('-d', String(AGENT__DEVICE));
+    
     rtlArgs.push('-E', 'dc');
     rtlArgs.push('-F', '0');
     rtlArgs.push('-A', 'fast');
@@ -138,8 +141,8 @@ function createPipe() {
 function shutdown(code = 0) {
     console.log('Shutting down');
     Promise.resolve()
-        .then(() => queue.close().catch((err) => { console.error('Error closing queue', err); }))
-        .then(() => redis.quit().catch((err) => { console.error('Error quitting redis', err); }))
+        .then(() => { if (queue) queue.close().catch((err) => { console.error('Error closing queue', err); }) })
+        .then(() => { if (redis) redis.quit().catch((err) => { console.error('Error quitting redis', err); }) })
         .then(() => {
             try {
                 if (mmProc && typeof mmProc.kill === 'function') mmProc.kill('SIGTERM');
@@ -157,7 +160,6 @@ function shutdown(code = 0) {
             process.exit(1);
         });
 }
-
 
 function handleLine(line) {
     if (!line || line.trim().length === 0) return;
@@ -190,6 +192,7 @@ function handleLine(line) {
         } catch (err) {
             console.log(line);
             if (line.indexOf('status:') !== -1) {
+                console.log('Received shutdown status from rtl_fm/multimon-ng');
                 const status = /status: (\d)/.exec(line);
                 shutdown(status ? parseInt(status[1], 10) : 1);
             }
@@ -213,6 +216,9 @@ const handleFlex = (obj) => ({
 })
 
 function main() {
+    console.log('Starting SDR agent');
+    createQueue();
+
     rtlProc = spawnRTL();
     mmProc = spawnMultimon();
     createPipe();
@@ -232,6 +238,5 @@ function main() {
     process.on('SIGTERM', shutdown);
     process.on('SIGQUIT', shutdown);
 }
-
 
 main();

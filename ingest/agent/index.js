@@ -46,6 +46,12 @@ function spawnRTL() {
 
     if (AGENT__GAIN) rtlArgs.push('-g', String(AGENT__GAIN));
     if (AGENT__PPM) rtlArgs.push('-p', String(AGENT__PPM));
+    if (AGENT__SQUELCH) {
+        rtlArgs.push('-l', String(AGENT__SQUELCH));
+    }
+    rtlArgs.push('-E', 'dc');
+    rtlArgs.push('-F', '0');
+    rtlArgs.push('-A', 'fast');
     
     console.log('Spawning rtl_fm', rtlArgs.join(' '));
     rtlProc = spawn('rtl_fm', rtlArgs, { stdio: ['ignore', 'pipe', 'inherit'] });
@@ -78,7 +84,7 @@ function spawnMultimon() {
         mmArgs.unshift('-a', d);
     });
 
-    if (AGENT__CHARSET) mmArgs.push('-c', AGENT__CHARSET);
+    if (AGENT__CHARSET) mmArgs.push('-C', AGENT__CHARSET);
     if (AGENT__FORMAT) mmArgs.push('-f', AGENT__FORMAT);
 
     mmArgs.push('--timestamp');

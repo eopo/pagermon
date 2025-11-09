@@ -5,6 +5,7 @@ const readline = require('readline');
 
 const { Queue, Job } = require('bullmq');
 const IORedis = require('ioredis');
+const { read } = require('fs');
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://redis:6379';
 
@@ -220,6 +221,12 @@ function main() {
     createPipe();
 
     const rl = readline.createInterface({ input: mmProc.stdout });
+    const err = readline.createInterface({ input: mmProc.stderr });
+
+    err.on('line', (line) => {
+        console.error('multimon-ng stderr:', line);
+        shutdown(1);
+    });
 
     rl.on('line', async (line) => {
         handleLine(line);

@@ -94,9 +94,10 @@ function spawnRTL() {
     // Listen on rtl_fm stderr for status messages (e.g. "cb transfer status: 1, canceling...")
     try {
         if (rtlProc.stderr) {
+            console.log('Setting up rtl_fm stderr listener');
             const rtlErrRl = readline.createInterface({ input: rtlProc.stderr });
             rtlErrRl.on('line', (line) => {
-                console.log(line);
+                console.log('rtl stderr: ', line);
                 if (line.indexOf('status:') !== -1) {
                     console.log('Received shutdown status from rtl_fm (stderr)');
                     const status = /status: (\d)/.exec(line);
@@ -147,9 +148,10 @@ function spawnMultimon() {
     // Listen on multimon-ng stderr for informational/status lines
     try {
         if (mmProc.stderr) {
+            console.log('Setting up multimon-ng stderr listener');
             const mmErrRl = readline.createInterface({ input: mmProc.stderr });
             mmErrRl.on('line', (line) => {
-                console.log(line);
+                console.log('multimon-ng stderr: ', line);
                 if (line.indexOf('status:') !== -1) {
                     console.log('Received shutdown status from multimon-ng (stderr)');
                     const status = /status: (\d)/.exec(line);
@@ -222,7 +224,7 @@ function handleLine(line) {
             });
 
         } catch (err) {
-            console.log(line);
+            console.log('stdout: ', line);
             if (line.indexOf('status:') !== -1) {
                 console.log('Received shutdown status from rtl_fm/multimon-ng');
                 const status = /status: (\d)/.exec(line);

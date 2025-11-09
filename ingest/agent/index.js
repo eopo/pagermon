@@ -230,6 +230,15 @@ function main() {
         shutdown(1);
     });
 
+    rl.on('error', (err) => {
+        console.error('Error reading multimon-ng stdout', err);
+        shutdown(1);
+    });
+    rl.on('exit', (code) => {
+        console.error('multimon-ng readline exited');
+        shutdown(code);
+    });
+
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
     process.on('SIGQUIT', shutdown);

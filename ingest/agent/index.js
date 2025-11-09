@@ -76,7 +76,8 @@ function spawnRTL() {
     rtlArgs.push('-A', 'fast');
     
     console.log('Spawning rtl_fm', rtlArgs.join(' '));
-    rtlProc = spawn('rtl_fm', rtlArgs, { stdio: ['ignore', 'pipe', 'inherit'] });
+    // Capture stderr as well — some diagnostic/status lines are printed there
+    rtlProc = spawn('rtl_fm', rtlArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
     rtlProc.on('error', (err) => {
         console.error('rtl_fm error', err);
         shutdown(1);
@@ -89,6 +90,23 @@ function spawnRTL() {
         const exitCode = (typeof code === 'number') ? code : (signal ? 1 : 0);
         shutdown(exitCode);
     });
+
+    // Listen on rtl_fm stderr for status messages (e.g. "cb transfer status: 1, canceling...")
+    try {
+        if (rtlProc.stderr) {
+            const rtlErrRl = readline.createInterface({ input: rtlProc.stderr });
+            rtlErrRl.on('line', (line) => {
+                console.log(line);
+                if (line.indexOf('status:') !== -1) {
+                    console.log('Received shutdown status from rtl_fm (stderr)');
+                    const status = /status: (\d)/.exec(line);
+                    shutdown(status ? parseInt(status[1], 10) : 1);
+                }
+            });
+        }
+    } catch (e) {
+        // non-fatal: continue without stderr parsing
+    }
 
     return rtlProc;
 }
@@ -115,7 +133,8 @@ function spawnMultimon() {
     mmArgs.push('-')
 
     console.log('Spawning multimon-ng', mmArgs.join(' '));
-    mmProc = spawn('multimon-ng', mmArgs, { stdio: ['pipe', 'pipe', 'inherit'] });
+    // Capture stderr so we can detect status/diagnostic lines printed there
+    mmProc = spawn('multimon-ng', mmArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
     mmProc.on('error', (err) => {
         console.error('multimon-ng error', err);
         shutdown(1);
@@ -125,6 +144,22 @@ function spawnMultimon() {
         const exitCode = (typeof code === 'number') ? code : (signal ? 1 : 0);
         shutdown(exitCode);
     });
+    // Listen on multimon-ng stderr for informational/status lines
+    try {
+        if (mmProc.stderr) {
+            const mmErrRl = readline.createInterface({ input: mmProc.stderr });
+            mmErrRl.on('line', (line) => {
+                console.log(line);
+                if (line.indexOf('status:') !== -1) {
+                    console.log('Received shutdown status from multimon-ng (stderr)');
+                    const status = /status: (\d)/.exec(line);
+                    shutdown(status ? parseInt(status[1], 10) : 1);
+                }
+            });
+        }
+    } catch (e) {
+        // non-fatal: continue without stderr parsing
+    }
     return mmProc;
 }
 
@@ -221,13 +256,6 @@ function main() {
     createPipe();
 
     const rl = readline.createInterface({ input: mmProc.stdout });
-    const err = readline.createInterface({ input: mmProc.stderr });
-
-    err.on('line', (line) => {
-        console.error('multimon-ng stderr:', line);
-        shutdown(1);
-    });
-
     rl.on('line', async (line) => {
         handleLine(line);
     });

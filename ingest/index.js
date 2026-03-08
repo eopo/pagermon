@@ -82,4 +82,24 @@ async function main() {
     console.log('[MAIN] Service started');
 }
 
+/**
+ * Graceful shutdown
+ */
+async function shutdown(code = 0) {
+    console.log('[MAIN] Initiating shutdown...');
+    
+    try {
+        health.stop();
+        await worker.close();
+        await queueModule.close();
+        agent.killProcesses();
+        
+        console.log('[MAIN] Shutdown complete');
+        process.exit(code);
+    } catch (err) {
+        console.error('[MAIN] Error during shutdown:', err.message);
+        process.exit(1);
+    }
+}
+
 main();

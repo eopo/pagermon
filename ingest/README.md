@@ -114,7 +114,7 @@ When enabled, permanently failed messages are moved to `sdr-messages-dlq` queue:
 ### Service fails to start
 - Check `INGEST__FREQUENCIES` and `INGEST__PROTOCOLS` are set
 - Verify `INGEST__API_KEY` is correct
-- Confirm Redis is available at `REDIS_URL`
+- Confirm Redis is available at `INGEST__REDIS_URL`
 
 ### Messages not being processed
 - Check health of PagerMon API

@@ -30,7 +30,7 @@ function create() {
         }
     });
 
-    if (ENABLE_DLQ) {
+    if (INGEST__ENABLE_DLQ) {
         dlQueue = new Queue('sdr-messages-dlq', {
             connection: redis,
             defaultJobOptions: {

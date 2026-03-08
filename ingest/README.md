@@ -11,6 +11,42 @@ Consolidated SDR message ingestion service for Pagermon. Combines RTL-FM, Multim
 - Dead Letter Queue (DLQ) for permanent failures
 - Structured logging with distinct prefixes for debugging
 
+## Architecture
+
+The ingest service is organized into domain modules:
+
+```
+ingest/
+├── index.js              # Main entry point
+├── lib/
+│   ├── config.js         # Configuration management
+│   ├── circuitBreaker.js # Circuit breaker utility
+│   ├── message/          # Message domain
+│   │   ├── index.js      # Message domain facade
+│   │   ├── model.js      # Normalization & validation
+│   │   └── parser.js     # Protocol parsing (POCSAG, FLEX)
+│   └── runtime/          # Runtime components
+│       ├── index.js      # Runtime domain facade
+│       ├── agent.js      # SDR process management
+│       ├── queue.js      # BullMQ message queue
+│       ├── worker.js     # Queue consumer & API client
+│       └── health.js     # API health monitoring
+└── package.json
+```
+
+**Message Domain** (`lib/message/`):
+
+- Parses multimon-ng JSON output
+- Normalizes format field (alpha/numeric)
+- Validates message structure before queueing
+
+**Runtime Domain** (`lib/runtime/`):
+
+- Agent spawns and pipes RTL-FM → Multimon-NG
+- Queue manages BullMQ message processing
+- Worker consumes queue and POSTs to API
+- Health monitors API availability and triggers recovery
+
 ## Configuration
 
 ### Required Environment Variables
@@ -78,11 +114,13 @@ Structured logging with prefixes:
 ## Error Handling
 
 **Transient Errors** (network, timeout):
+
 - Automatic retry by BullMQ
 - Up to 10 attempts with exponential backoff
 - Circuit breaker stops attempts after too many failures
 
 **Permanent Errors** (auth, validation):
+
 - No retries
 - Optionally moved to Dead Letter Queue
 - Available for manual analysis
@@ -90,6 +128,7 @@ Structured logging with prefixes:
 ## Queue Recovery
 
 After successful API reconnection:
+
 1. Health check detects API is available
 2. Circuit breaker transitions to HALF_OPEN
 3. All failed jobs are retried
@@ -112,16 +151,19 @@ When enabled, permanently failed messages are moved to `sdr-messages-dlq` queue:
 ## Troubleshooting
 
 ### Service fails to start
+
 - Check `INGEST__FREQUENCIES` and `INGEST__PROTOCOLS` are set
 - Verify `INGEST__API_KEY` is correct
 - Confirm Redis is available at `INGEST__REDIS_URL`
 
 ### Messages not being processed
+
 - Check health of PagerMon API
 - Verify `INGEST__API_URL` is correct and reachable
 - Review logs for permanent errors
 
 ### Failed messages
+
 - Check Dead Letter Queue if enabled
 - Review logs for error details
 - Check circuit breaker status
@@ -129,12 +171,26 @@ When enabled, permanently failed messages are moved to `sdr-messages-dlq` queue:
 ## Development
 
 ### With Docker Compose (development)
+
 ```bash
 docker compose -f compose.override.yml up --build
 ```
 
 ### Local Node
+
 ```bash
 npm install
 node index.js  # INGEST__* environment variables required
 ```
+
+## Message Format Semantics
+
+The ingest service forwards a normalized `format` field to PagerMon API using multimon-ng terminology:
+
+- `alpha` for alphanumeric payloads (`Alpha:` / `ALN`)
+- `numeric` for numeric or generic payloads (`Numeric:` / `NUM` / `GPN`)
+
+Behavior:
+
+- `alpha` requires a non-empty `message`
+- `numeric` allows an empty `message` and forwards it as an empty string

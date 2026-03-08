@@ -3,8 +3,8 @@
  * Tests the actual API endpoint used for message transmission
  */
 
-const { INGEST__API_URL, INGEST__API_KEY } = require('./config');
-const circuitBreaker = require('./circuitBreaker');
+const { INGEST__API_URL, INGEST__API_KEY } = require('../config');
+const circuitBreaker = require('../circuitBreaker');
 const queue = require('./queue');
 
 let isHealthy = false;

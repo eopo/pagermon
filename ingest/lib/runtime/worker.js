@@ -4,12 +4,12 @@
 
 const { Worker } = require('bullmq');
 
-const { INGEST__API_URL, INGEST__API_KEY } = require('./config');
-const circuitBreaker = require('./circuitBreaker');
-const { normalizeMessage, validateMessage } = require('./message');
+const { INGEST__API_URL, INGEST__API_KEY } = require('../config');
+const circuitBreaker = require('../circuitBreaker');
+const { normalizeMessage, validateMessage } = require('../message');
 const queue = require('./queue');
 
-const version = require('../package.json').version;
+const version = require('../../package.json').version;
 
 let worker;
 

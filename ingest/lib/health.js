@@ -1,8 +1,9 @@
 /**
  * Health check logic for API availability monitoring
+ * Tests the actual API endpoint used for message transmission
  */
 
-const { INGEST__API_URL } = require('./config');
+const { INGEST__API_URL, INGEST__API_KEY } = require('./config');
 const circuitBreaker = require('./circuitBreaker');
 const queue = require('./queue');
 
@@ -11,22 +12,25 @@ let healthCheckInterval;
 
 /**
  * Perform a health check against the PagerMon API
+ * Uses GET /api/messages to verify API availability
  */
 async function check() {
     try {
-        const response = await fetch(`${INGEST__API_URL}/health`, {
+        const response = await fetch(`${INGEST__API_URL}/api/messages`, {
             method: 'GET',
-            timeout: 5000,
+            headers: {
+                'apikey': INGEST__API_KEY
+            },
             signal: AbortSignal.timeout(5000)
         });
         
-        const healthy = response.ok;
-        circuitBreaker.updateState(healthy);
+        const healthy = response.ok || response.status === 401; // 401 means API is up, just auth check
         
         if (healthy !== isHealthy) {
             isHealthy = healthy;
             console.log(`[HEALTH] API is ${healthy ? 'UP' : 'DOWN'}`);
             
+            // Trigger recovery when API comes back online and circuit is closed
             if (healthy && circuitBreaker.getState().state === 'CLOSED') {
                 await processFailedJobs();
             }
@@ -34,8 +38,6 @@ async function check() {
         
         return healthy;
     } catch (error) {
-        circuitBreaker.updateState(false);
-        
         if (isHealthy) {
             isHealthy = false;
             console.warn(`[HEALTH] API check failed: ${error.message}`);
@@ -79,6 +81,7 @@ async function processFailedJobs() {
  * Start health check interval
  */
 function start() {
+    console.log('[HEALTH] Starting API health checks');
     check();
     healthCheckInterval = setInterval(check, 10000);
 }
@@ -100,7 +103,6 @@ function getStatus() {
 }
 
 module.exports = {
-    check,
     start,
     stop,
     getStatus

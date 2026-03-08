@@ -1,22 +1,30 @@
 name: pagermon-ingest
+
 services:
-  worker:
-    image: ghcr.io/pagermon/pagermon-ingest-worker:latest
+  ingest:
+    image: ghcr.io/pagermon/pagermon-ingest:latest
     restart: unless-stopped
     env_file: stack.env
     depends_on:
-      - redis
-  agent:
-    image: ghcr.io/pagermon/pagermon-ingest-agent:latest
-    restart: unless-stopped
-    env_file: stack.env
+      redis:
+        condition: service_started
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+    devices:
+      - /dev/bus/usb
     privileged: true
-    depends_on:
-      - redis
+
   redis:
     image: redis:8-alpine
     restart: unless-stopped
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   redis-data:
+    driver: local

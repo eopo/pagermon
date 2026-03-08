@@ -40,10 +40,12 @@ INGEST__DEVICE=0                     # RTL-SDR device index
 INGEST__LABEL=sdr-ingest-1           # Agent label
 
 # Redis
-REDIS_URL=redis://redis:6379         # Redis connection URL
+INGEST__REDIS_URL=redis://redis:6379 # Redis connection URL
 
 # Advanced features
-ENABLE_DLQ=true                      # Enable Dead Letter Queue
+INGEST__ENABLE_DLQ=true              # Enable Dead Letter Queue
+INGEST__CIRCUIT_BREAKER_THRESHOLD=5  # Failures before opening circuit
+INGEST__CIRCUIT_BREAKER_TIMEOUT=30000 # Recovery attempt timeout (ms)
 ```
 
 ## Quick Start
